@@ -60,7 +60,7 @@ public:
 		dataset.push_back({p,v});
 	}
 private:
-	set* closer_set(vec2 p,vector<set*> ignore = {}) {
+	set* closer_set(vec2 p,vector<set*> ignore = {},bool e=true) {
 		set* c = nullptr;
 		double min_dist = (+INFINITY);
 		for(int i = 0; i < dataset.size(); i++) {
@@ -70,7 +70,7 @@ private:
 					goto skip_element;
 				}
 			}
-			c_dist = dataset[i].p.distance_manh(p);
+			c_dist = dataset[i].p.distance(p,e);
 			if(c_dist < min_dist) {
 				c = &dataset[i];
 				min_dist = c_dist;
@@ -80,72 +80,38 @@ private:
 		return c;
 	}
 public:
-	double predict(vec2 p,int k=3) {
+	double predict(vec2 p,int k=3,bool euclidian = true) {
 		vector<set*> near_v;
 		for(int i = 0; i < k; i++) {
-			push_repeated(&near_v,closer_set(p,near_v),k - i);
+			push_repeated(&near_v,closer_set(p,near_v,euclidian),k - i);
 		}
 		return average_set(near_v);
 	}
 };
 
+double f(double X,double Y) {
+	return pow(X,1/Y);
+}
+
 int main() {
 	knn clf;
 
-	for(double x = 1; x <= 10; x+=0.1) {
-		for(double y = 1; y <= 10; y+=0.1) {
-			clf.add({x,y}, x/y );
+	for(double x = 1; x <= 10; x+=0.5) {
+		for(double y = 1; y <= 10; y+=0.5) {
+			clf.add({x,y}, f(x,y) );
 		}
 	}
 
-	const double x = 10.1834;
-	const double y = 2.1239;
-
 	vector<double> accuracy = {};
 
-	for(double x = 1; x <= 10; x += 0.01) {
-		for(double y = 1; y <= 10; y += 0.01) {
-			double ob = x / y;
-			double pr = clf.predict({x,y},3);
+	for(double x = 1; x <= 10; x += 0.05) {
+		for(double y = 1; y <= 10; y += 0.05) {
+			double ob = f(x,y);
+			double pr = clf.predict({x,y},3,false);
 			accuracy.push_back( min(ob,pr)/max(ob,pr) );
 		}
 	}
 
-	cout << average(accuracy);
-	
-
-	//cout << "predict: " << z_test << ", observed: " << x/y << ", y*z= " << y*z_test << ", x: " << x << endl;
-
-
-	/*while(1) {
-		SDL_PollEvent(&e);
-		SDL_SetRenderDrawColor(renderer,255,255,255,255);
-		SDL_RenderClear(renderer);
-		SDL_SetRenderDrawColor(renderer,0,0,0,255);
-
-		buttons = SDL_GetMouseState(&dx,&dy);
-
-		if(buttons == SDL_BUTTON_LEFT) {
-			clf.add({(int)floor(dx / w_r),(int)floor(dy / h_r)},1);
-		}
-		if(buttons == SDL_BUTTON_RIGHT) {
-			clf.add({(int)floor(dx / w_r),(int)floor(dy / h_r)},0);
-		}
-		for(int i = 0; i < clf.dataset.size(); i++) {
-			SDL_SetRenderDrawColor(renderer,clf.dataset[i].v * 255,0,255,255);
-			SDL_Rect r = {clf.dataset[i].p.x * w_r,clf.dataset[i].p.y * h_r,w_r,h_r};
-			SDL_RenderFillRect(renderer,&r);
-		}
-		if(e.key.keysym.scancode == SDL_SCANCODE_P && e.type == SDL_KEYUP) {
-			auto p = clf.predict({(int)floor(dx / w_r),(int)floor(dy / h_r)},3);
-			clf.add({(int)floor(dx / w_r),(int)floor(dy / h_r)},p);
-		}
-
-
-		SDL_SetRenderDrawColor(renderer,0,0,0,255);
-		SDL_Rect r = {floor(dx / w_r)*w_r,floor(dy / h_r)*h_r,w_r,h_r};
-		SDL_RenderDrawRect(renderer,&r);
-		
-		SDL_RenderPresent(renderer);
-	}*/
+	cout.precision(3);
+	cout << average(accuracy)*100 << "%";
 }
